@@ -1,0 +1,40 @@
+version: '3.7'
+services:
+  python:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+
+    # https://amaya382.hatenablog.jp/entry/2017/04/03/034002
+    image: deeppreid:v0
+    container_name: deeppreid
+
+    ports:
+      - 8886:8886
+
+    # Fix slow shutdown of web container
+    # See: https://stackoverflow.com/a/62854251/1749551
+    init: true
+    volumes:
+      # bind mount
+      - ./:/home/appuser
+    # INFO: Following two lines are necessary for the backtrace by pdb
+    stdin_open: true
+    tty: true
+    # command: /bin/sh
+    command: >
+      bash -c "
+        jupyter notebook --no-browser --ip=0.0.0.0 --port 8886 --allow-root --NotebookApp.token='demo'
+      "
+    working_dir: /home/appuser
+
+    # NOTE: `deploy:` is necessary only for GPU.
+    # https://docs.docker.jp/compose/gpu-support.html
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1 # The number of GPU you use
+              capabilities: [ gpu ]
+    shm_size: "6gb"
